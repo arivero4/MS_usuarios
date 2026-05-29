@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: ms-usuarios
+
+  datasource:
+    url: ${DB_URL:jdbc:oracle:thin:@localhost:1522:XE}
+    username: ${DB_USERNAME:ms_usuarios}
+    password: ${DB_PASSWORD:ms_usuarios_pass}
+    driver-class-name: oracle.jdbc.driver.OracleDriver
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: America/Bogota
+
+server:
+  port: ${SERVER_PORT:8081}
+  servlet:
+    context-path: /
+
+jwt:
+  secret: ${JWT_SECRET:ms-usuarios-secret-key-debe-tener-minimo-32-caracteres}
+  expiracion: ${JWT_EXPIRACION:86400000}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    usuarios: INFO
+    org.springframework.jdbc: DEBUG

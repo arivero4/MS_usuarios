@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1522:XE
+    username: ms_usuarios
+    password: ms_usuarios_pass
+    driver-class-name: oracle.jdbc.driver.OracleDriver
+
+server:
+  port: 8081
+
+jwt:
+  secret: dev-secret-key-solo-para-desarrollo-local-32chars
+  expiracion: 86400000
+
+logging:
+  level:
+    usuarios: DEBUG
+    org.springframework.jdbc: DEBUG
+    org.springframework.security: DEBUG

@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+
+  oracle-db:
+    image: oracleinanutshell/oracle-xe-11g:latest
+    # Nota: Oracle 10g no tiene imagen oficial Docker; se usa 11g XE como alternativa
+    # compatible. Para 10g real, instalar manualmente en el host.
+    container_name: oracle-ms-usuarios
+    ports:
+      - "1521:1521"
+      - "8081:8080"
+    environment:
+      - ORACLE_ALLOW_REMOTE=true
+      - ORACLE_DISABLE_ASYNCH_IO=true
+    volumes:
+      - oracle_data:/u01/app/oracle
+      - ../../src/main/resources/db/scripts/init-oracle.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ../../src/main/resources/db/migration/V1__create_usuario.sql:/docker-entrypoint-initdb.d/02_v1.sql
+      - ../../src/main/resources/db/migration/V2__create_grupo.sql:/docker-entrypoint-initdb.d/03_v2.sql
+    healthcheck:
+      test: ["CMD", "sqlplus", "-L", "ms_usuarios/ms_usuarios_pass@//localhost:1521/XE", "@/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  ms-usuarios:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: ms-usuarios-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_URL=jdbc:oracle:thin:@oracle-db:1521:XE
+      - DB_USERNAME=ms_usuarios
+      - DB_PASSWORD=ms_usuarios_pass
+      - JWT_SECRET=produccion-secret-key-minimo-32-caracteres-seguro
+      - JWT_EXPIRACION=86400000
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+
+volumes:
+  oracle_data:
+    driver: local

@@ -1,0 +1,44 @@
+-- ============================================================
+-- V1: Creación de tablas USUARIOS y secuencia
+-- Compatible con Oracle 10g
+-- ============================================================
+
+-- Secuencia para ID de usuarios
+CREATE SEQUENCE SEQ_USUARIOS
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE
+    NOCYCLE;
+
+-- Tabla principal de usuarios
+CREATE TABLE USUARIOS (
+    ID                       NUMBER(19)     NOT NULL,
+    NUMERO_IDENTIFICACION    VARCHAR2(50)   NOT NULL,
+    NOMBRE                   VARCHAR2(200)  NOT NULL,
+    CORREO                   VARCHAR2(200)  NOT NULL,
+    TELEFONO                 VARCHAR2(20),
+    PASSWORD                 VARCHAR2(255)  NOT NULL,
+    NUMERO_TARJETA_PROFESIONAL VARCHAR2(50),
+    ESTADO                   VARCHAR2(20)   NOT NULL,
+    FECHA_CREACION           DATE           NOT NULL,
+    FECHA_ACTUALIZACION      DATE           NOT NULL,
+    CONSTRAINT PK_USUARIOS PRIMARY KEY (ID),
+    CONSTRAINT UK_USUARIOS_CORREO UNIQUE (CORREO),
+    CONSTRAINT UK_USUARIOS_NUM_ID UNIQUE (NUMERO_IDENTIFICACION),
+    CONSTRAINT CK_USUARIOS_ESTADO CHECK (ESTADO IN ('ACTIVO','INACTIVO','SUSPENDIDO','BLOQUEADO'))
+);
+
+-- Trigger para auto-incremento con secuencia (Oracle 10g no tiene IDENTITY)
+CREATE OR REPLACE TRIGGER TRG_USUARIOS_ID
+    BEFORE INSERT ON USUARIOS
+    FOR EACH ROW
+BEGIN
+    IF :NEW.ID IS NULL THEN
+        SELECT SEQ_USUARIOS.NEXTVAL INTO :NEW.ID FROM DUAL;
+    END IF;
+END;
+/
+
+-- Índices
+CREATE INDEX IDX_USUARIOS_CORREO ON USUARIOS(CORREO);
+CREATE INDEX IDX_USUARIOS_ESTADO ON USUARIOS(ESTADO);
