@@ -32,18 +32,18 @@ public class GrupoRepositoryAdapter implements GrupoRepositoryPort {
 
     // ── SQL ───────────────────────────────────────────────────────────────────
 
-    private static final String INSERT      = "INSERT INTO GRUPOS (ID,NOMBRE,DESCRIPCION,ESTADO) VALUES (SEQ_GRUPOS.NEXTVAL,?,?,?)";
+    private static final String INSERT      = "INSERT INTO GRUPOS (NOMBRE,DESCRIPCION,ESTADO) VALUES (?,?,?)";
     private static final String SELECT_BASE = "SELECT ID,NOMBRE,DESCRIPCION,ESTADO FROM GRUPOS";
     private static final String UPDATE      = "UPDATE GRUPOS SET NOMBRE=?,DESCRIPCION=?,ESTADO=? WHERE ID=?";
     private static final String DELETE      = "DELETE FROM GRUPOS WHERE ID=?";
     private static final String EXISTS_NOMBRE = "SELECT COUNT(1) FROM GRUPOS WHERE NOMBRE=?";
 
-    private static final String INSERT_GRP_PRV    = "INSERT INTO GRUPO_PRIVILEGIO (GRUPO_ID,PRIVILEGIO_ID) VALUES (?,?)";
-    private static final String DELETE_GRP_PRV    = "DELETE FROM GRUPO_PRIVILEGIO WHERE GRUPO_ID=?";
+    private static final String INSERT_GRP_PRV    = "INSERT INTO PRIVILEGIO_GRUPO (ID_GRUPO,ID_PRIVILEGIO) VALUES (?,?)";
+    private static final String DELETE_GRP_PRV    = "DELETE FROM PRIVILEGIO_GRUPO WHERE ID_GRUPO=?";
 
     private static final String SELECT_PRIVILEGIOS =
             "SELECT P.ID,P.CODIGO,P.NOMBRE,P.DESCRIPCION,P.ACCION,P.RECURSO FROM PRIVILEGIOS P " +
-            "JOIN GRUPO_PRIVILEGIO GP ON P.ID=GP.PRIVILEGIO_ID WHERE GP.GRUPO_ID=?";
+            "JOIN PRIVILEGIO_GRUPO PG ON P.ID=PG.ID_PRIVILEGIO WHERE PG.ID_GRUPO=?";
 
     // ── Operaciones ───────────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ public class GrupoRepositoryAdapter implements GrupoRepositoryPort {
 
     @Override
     public List<Grupo> buscarTodos() {
-        return jdbcTemplate.query(SELECT_BASE + " ORDER BY ID", grupoRowMapper()).stream()
+        return jdbcTemplate.query(SELECT_BASE + " ORDER BY NOMBRE", grupoRowMapper()).stream()
                 .map(e -> mapper.toDomain(cargarPrivilegios(e)))
                 .collect(Collectors.toList());
     }

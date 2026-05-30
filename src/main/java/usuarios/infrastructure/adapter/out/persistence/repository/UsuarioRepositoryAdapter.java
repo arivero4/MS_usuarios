@@ -36,31 +36,31 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
     // ── SQL ───────────────────────────────────────────────────────────────────
 
     private static final String INSERT =
-            "INSERT INTO USUARIOS (ID,NUMERO_IDENTIFICACION,NOMBRE,CORREO,TELEFONO," +
-            "PASSWORD,NUMERO_TARJETA_PROFESIONAL,ESTADO,FECHA_CREACION,FECHA_ACTUALIZACION) " +
-            "VALUES (SEQ_USUARIOS.NEXTVAL,?,?,?,?,?,?,?,?,?)";
+            "INSERT INTO USUARIO (ID_USUARIO,NUMERO_IDENTIFICACION,NOMBRE,CORREO,TELEFONO," +
+            "PASSWORD,NUM_TARJETA_PROFESIONAL,ESTADO,FECHA_CREACION,FECHA_ACTUALIZACION) " +
+            "VALUES (SEQ_USUARIO.NEXTVAL,?,?,?,?,?,?,?,?,?)";
 
     private static final String SELECT_BASE =
-            "SELECT ID,NUMERO_IDENTIFICACION,NOMBRE,CORREO,TELEFONO," +
-            "PASSWORD,NUMERO_TARJETA_PROFESIONAL,ESTADO,FECHA_CREACION,FECHA_ACTUALIZACION FROM USUARIOS";
+            "SELECT ID_USUARIO,NUMERO_IDENTIFICACION,NOMBRE,CORREO,TELEFONO," +
+            "PASSWORD,NUM_TARJETA_PROFESIONAL,ESTADO,FECHA_CREACION,FECHA_ACTUALIZACION FROM USUARIO";
 
     private static final String UPDATE =
-            "UPDATE USUARIOS SET NOMBRE=?,TELEFONO=?,NUMERO_TARJETA_PROFESIONAL=?," +
-            "ESTADO=?,FECHA_ACTUALIZACION=? WHERE ID=?";
+            "UPDATE USUARIO SET NOMBRE=?,TELEFONO=?,NUM_TARJETA_PROFESIONAL=?," +
+            "ESTADO=?,FECHA_ACTUALIZACION=? WHERE ID_USUARIO=?";
 
-    private static final String DELETE              = "DELETE FROM USUARIOS WHERE ID=?";
-    private static final String EXISTS_CORREO       = "SELECT COUNT(1) FROM USUARIOS WHERE CORREO=?";
-    private static final String EXISTS_NUM_ID       = "SELECT COUNT(1) FROM USUARIOS WHERE NUMERO_IDENTIFICACION=?";
-    private static final String INSERT_USR_GRP      = "INSERT INTO USUARIO_GRUPO (USUARIO_ID,GRUPO_ID) VALUES (?,?)";
-    private static final String DELETE_USR_GRP_ALL  = "DELETE FROM USUARIO_GRUPO WHERE USUARIO_ID=?";
+    private static final String DELETE              = "DELETE FROM USUARIO WHERE ID_USUARIO=?";
+    private static final String EXISTS_CORREO       = "SELECT COUNT(1) FROM USUARIO WHERE CORREO=?";
+    private static final String EXISTS_NUM_ID       = "SELECT COUNT(1) FROM USUARIO WHERE NUMERO_IDENTIFICACION=?";
+    private static final String INSERT_USR_GRP      = "INSERT INTO GRUPOS_USUARIO (ID_USUARIO,ID_GRUPO) VALUES (?,?)";
+    private static final String DELETE_USR_GRP_ALL  = "DELETE FROM GRUPOS_USUARIO WHERE ID_USUARIO=?";
 
     private static final String SELECT_GRUPOS =
             "SELECT G.ID,G.NOMBRE,G.DESCRIPCION,G.ESTADO FROM GRUPOS G " +
-            "JOIN USUARIO_GRUPO UG ON G.ID=UG.GRUPO_ID WHERE UG.USUARIO_ID=?";
+            "JOIN GRUPOS_USUARIO GU ON G.ID=GU.ID_GRUPO WHERE GU.ID_USUARIO=?";
 
     private static final String SELECT_PRIVILEGIOS =
             "SELECT P.ID,P.CODIGO,P.NOMBRE,P.DESCRIPCION,P.ACCION,P.RECURSO FROM PRIVILEGIOS P " +
-            "JOIN GRUPO_PRIVILEGIO GP ON P.ID=GP.PRIVILEGIO_ID WHERE GP.GRUPO_ID=?";
+            "JOIN PRIVILEGIO_GRUPO PG ON P.ID=PG.ID_PRIVILEGIO WHERE PG.ID_GRUPO=?";
 
     // ── Operaciones ───────────────────────────────────────────────────────────
 
@@ -68,7 +68,7 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
     public Usuario guardar(Usuario usuario) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
-            PreparedStatement ps = con.prepareStatement(INSERT, new String[]{"ID"});
+            PreparedStatement ps = con.prepareStatement(INSERT, new String[]{"ID_USUARIO"});
             ps.setString(1, usuario.getNumeroIdentificacion());
             ps.setString(2, usuario.getNombre());
             ps.setString(3, usuario.getCorreo());
@@ -87,7 +87,7 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
 
     @Override
     public Optional<Usuario> buscarPorId(Long id) {
-        List<UsuarioEntity> rows = jdbcTemplate.query(SELECT_BASE + " WHERE ID=?", usuarioRowMapper(), id);
+        List<UsuarioEntity> rows = jdbcTemplate.query(SELECT_BASE + " WHERE ID_USUARIO=?", usuarioRowMapper(), id);
         if (rows.isEmpty()) return Optional.empty();
         return Optional.of(mapper.toDomain(cargarRelaciones(rows.get(0))));
     }
@@ -109,7 +109,7 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
 
     @Override
     public List<Usuario> buscarTodos() {
-        return jdbcTemplate.query(SELECT_BASE + " ORDER BY ID", usuarioRowMapper()).stream()
+        return jdbcTemplate.query(SELECT_BASE + " ORDER BY ID_USUARIO", usuarioRowMapper()).stream()
                 .map(e -> mapper.toDomain(cargarRelaciones(e)))
                 .collect(Collectors.toList());
     }
@@ -194,13 +194,13 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
         @Override
         public UsuarioEntity mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
             UsuarioEntity e = new UsuarioEntity();
-            e.setId(rs.getLong("ID"));
+            e.setId(rs.getLong("ID_USUARIO"));
             e.setNumeroIdentificacion(rs.getString("NUMERO_IDENTIFICACION"));
             e.setNombre(rs.getString("NOMBRE"));
             e.setCorreo(rs.getString("CORREO"));
             e.setTelefono(rs.getString("TELEFONO"));
             e.setPassword(rs.getString("PASSWORD"));
-            e.setNumeroTarjetaProfesional(rs.getString("NUMERO_TARJETA_PROFESIONAL"));
+            e.setNumeroTarjetaProfesional(rs.getString("NUM_TARJETA_PROFESIONAL"));
             e.setEstado(rs.getString("ESTADO"));
             Timestamp fc = rs.getTimestamp("FECHA_CREACION");
             e.setFechaCreacion(fc != null ? fc.toLocalDateTime() : null);
