@@ -1,33 +1,63 @@
+# ============================================================
+# Configuración principal del microservicio ms-usuarios
+# Entorno: BASE (aplica en todos los perfiles)
+# Para desarrollo, application-dev.yml sobreescribe algunos valores
+# ============================================================
+
 spring:
   application:
+    # Nombre del servicio. Se usa en logs y en Service Discovery (si se integra Eureka).
     name: ms-usuarios
 
   datasource:
+    # Cadena de conexión JDBC a Oracle XE. La sintaxis thin no requiere cliente nativo Oracle.
+    # Puerto 1522 es el estándar de Oracle XE. Se sobreescribe con la variable DB_URL.
     url: ${DB_URL:jdbc:oracle:thin:@localhost:1522:XE}
     username: ${DB_USERNAME:ms_usuarios}
     password: ${DB_PASSWORD:ms_usuarios_pass}
+    # Driver JDBC propietario de Oracle 10g instalado localmente via mvn install:install-file
     driver-class-name: oracle.jdbc.driver.OracleDriver
 
   jackson:
+    # Formato de serialización de fechas en respuestas JSON.
+    # Sin esto, Jackson usaría ISO-8601 con timezone UTC (ej: "2026-01-15T10:30:00.000+00:00")
     date-format: yyyy-MM-dd HH:mm:ss
+    # Zona horaria de Colombia (UTC-5). Ajusta la serialización de LocalDateTime.
     time-zone: America/Bogota
 
 server:
+  # Puerto de escucha del servidor Tomcat embebido.
+  # Sobreescribible con SERVER_PORT para despliegue en contenedores Docker.
   port: ${SERVER_PORT:8081}
   servlet:
+    # Sin context-path (ruta base "/"). Los endpoints son directamente /api/v1/...
     context-path: /
 
+# ── Configuración JWT ─────────────────────────────────────────────────────────
 jwt:
+  # Clave secreta para firmar tokens JWT con HMAC-SHA256.
+  # OBLIGATORIO: mínimo 32 caracteres (256 bits) para el algoritmo HS256.
+  # En producción se inyecta desde la variable JWT_SECRET (nunca en texto plano en el repo).
   secret: ${JWT_SECRET:ms-usuarios-secret-key-debe-tener-minimo-32-caracteres}
+  # Tiempo de vida del token en milisegundos: 86.400.000 ms = 24 horas.
+  # Sobreescribible con JWT_EXPIRACION para sesiones más cortas en producción.
   expiracion: ${JWT_EXPIRACION:86400000}
 
+# ── SpringDoc / Swagger UI ────────────────────────────────────────────────────
 springdoc:
   api-docs:
+    # URL del esquema OpenAPI en formato JSON.
+    # Habilitado en SecurityConfig como ruta pública.
     path: /v3/api-docs
   swagger-ui:
+    # URL de la interfaz gráfica de Swagger.
     path: /swagger-ui.html
 
+# ── Logging ───────────────────────────────────────────────────────────────────
 logging:
   level:
+    # INFO para el código propio: reduce ruido, muestra eventos importantes.
     usuarios: INFO
+    # DEBUG para JDBC: muestra las sentencias SQL ejecutadas. Útil en desarrollo.
+    # En producción cambiar a INFO o WARN para evitar logs excesivos.
     org.springframework.jdbc: DEBUG

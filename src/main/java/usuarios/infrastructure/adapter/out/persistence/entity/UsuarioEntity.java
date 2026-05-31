@@ -5,8 +5,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Representa la tabla USUARIOS en Oracle 10g.
- * Se usa JDBC puro (sin JPA) por compatibilidad con Oracle 10g.
+ * Entidad de persistencia que representa una fila de la tabla {@code USUARIO} en Oracle.
+ *
+ * <p>Es un POJO simple sin anotaciones JPA. La persistencia se realiza con
+ * {@code JdbcTemplate} en
+ * {@link usuarios.infrastructure.adapter.out.persistence.repository.UsuarioRepositoryAdapter}
+ * porque Oracle 10g tiene compatibilidad limitada con los dialectos modernos de Hibernate.</p>
+ *
+ * <p>Diferencias con el modelo de dominio {@link usuarios.domain.model.Usuario}:</p>
+ * <ul>
+ *   <li>El estado se almacena como {@code String} en lugar del enum {@link usuarios.domain.enums.Estado}.</li>
+ *   <li>No tiene métodos de negocio (activar, bloquear, etc.).</li>
+ *   <li>La lista de grupos se carga por separado con una consulta JOIN a {@code GRUPOS_USUARIO}.</li>
+ * </ul>
+ *
+ * <p>Columnas de la tabla {@code USUARIO}:</p>
+ * <pre>
+ *  ID_USUARIO              NUMBER(19)     PK (SEQ_USUARIO)
+ *  NUMERO_IDENTIFICACION   VARCHAR2(30)   NOT NULL, UNIQUE
+ *  NOMBRE                  VARCHAR2(100)  NOT NULL
+ *  CORREO                  VARCHAR2(100)  NOT NULL, UNIQUE
+ *  TELEFONO                VARCHAR2(20)   NULL
+ *  PASSWORD                VARCHAR2(255)  NOT NULL (BCrypt hash)
+ *  NUM_TARJETA_PROFESIONAL VARCHAR2(50)   NULL
+ *  ESTADO                  VARCHAR2(30)   NOT NULL CHECK(ACTIVO|INACTIVO|SUSPENDIDO|BLOQUEADO)
+ *  FECHA_CREACION          DATE           NOT NULL
+ *  FECHA_ACTUALIZACION     DATE           NULL
+ * </pre>
  */
 public class UsuarioEntity {
 
@@ -15,13 +40,19 @@ public class UsuarioEntity {
     private String nombre;
     private String correo;
     private String telefono;
-    private String password;
+    private String password;            // Siempre hash BCrypt de 60 caracteres
     private String numeroTarjetaProfesional;
-    private String estado;
+    private String estado;              // String del enum Estado (ACTIVO, BLOQUEADO, etc.)
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
+
+    /**
+     * Lista de grupos del usuario. No mapea directamente a una columna;
+     * se carga mediante JOIN con {@code GRUPOS_USUARIO} y {@code GRUPOS}.
+     */
     private List<GrupoEntity> grupos;
 
+    /** Constructor vacío. Inicializa {@code grupos} para evitar NullPointerException. */
     public UsuarioEntity() {
         this.grupos = new ArrayList<>();
     }
