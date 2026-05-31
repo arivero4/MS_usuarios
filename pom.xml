@@ -15,7 +15,7 @@
 
     <groupId>com.empresa</groupId>
     <artifactId>ms-usuarios</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>ms-usuarios</name>
     <description>Microservicio de gestión de usuarios</description>

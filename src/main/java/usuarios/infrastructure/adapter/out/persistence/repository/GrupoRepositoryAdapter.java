@@ -19,12 +19,31 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Adaptador JDBC que implementa {@link usuarios.application.port.out.GrupoRepositoryPort}
+ * sobre Oracle XE 10g usando {@link JdbcTemplate}.
+ *
+ * <p>Gestiona la tabla {@code GRUPOS} y la tabla de asociacion
+ * {@code PRIVILEGIO_GRUPO} (relacion N:M entre grupos y privilegios).
+ * Al persistir un grupo, elimina y re-inserta sus privilegios para mantener
+ * la lista sincronizada.</p>
+ *
+ * <p>Carga los privilegios de cada grupo con una segunda consulta mediante
+ * {@link #cargarPrivilegios(GrupoEntity)} para evitar JOINs complejos
+ * en la consulta principal.</p>
+ */
 @Repository
 public class GrupoRepositoryAdapter implements GrupoRepositoryPort {
 
     private final JdbcTemplate jdbcTemplate;
     private final PersistenceMapper mapper;
 
+    /**
+     * Constructor con inyeccion de dependencias.
+     *
+     * @param jdbcTemplate plantilla JDBC configurada para Oracle XE 10g.
+     * @param mapper       mapeador entre entidades de persistencia y modelos de dominio.
+     */
     public GrupoRepositoryAdapter(JdbcTemplate jdbcTemplate, PersistenceMapper mapper) {
         this.jdbcTemplate = jdbcTemplate;
         this.mapper       = mapper;
@@ -32,10 +51,15 @@ public class GrupoRepositoryAdapter implements GrupoRepositoryPort {
 
     // ── SQL ───────────────────────────────────────────────────────────────────
 
+    /** Sentencia SQL para insertar un nuevo grupo. Usa {@code GeneratedKeyHolder} para recuperar el ID generado. */
     private static final String INSERT      = "INSERT INTO GRUPOS (NOMBRE,DESCRIPCION,ESTADO) VALUES (?,?,?)";
+    /** SELECT base para recuperar grupos. Se complementa con WHERE, ORDER BY, etc. */
     private static final String SELECT_BASE = "SELECT ID,NOMBRE,DESCRIPCION,ESTADO FROM GRUPOS";
+    /** Sentencia SQL para actualizar nombre, descripcion y estado de un grupo existente. */
     private static final String UPDATE      = "UPDATE GRUPOS SET NOMBRE=?,DESCRIPCION=?,ESTADO=? WHERE ID=?";
+    /** Sentencia SQL para eliminar un grupo por ID (ejecutar despues de eliminar sus privilegios). */
     private static final String DELETE      = "DELETE FROM GRUPOS WHERE ID=?";
+    /** Consulta para verificar si ya existe un grupo con un nombre dado (unicidad). */
     private static final String EXISTS_NOMBRE = "SELECT COUNT(1) FROM GRUPOS WHERE NOMBRE=?";
 
     private static final String INSERT_GRP_PRV    = "INSERT INTO PRIVILEGIO_GRUPO (ID_GRUPO,ID_PRIVILEGIO) VALUES (?,?)";
@@ -104,6 +128,13 @@ public class GrupoRepositoryAdapter implements GrupoRepositoryPort {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Carga los privilegios asociados a un grupo mediante una consulta JOIN
+     * entre {@code PRIVILEGIOS} y {@code PRIVILEGIO_GRUPO}.
+     *
+     * @param entity entidad del grupo sin privilegios cargados.
+     * @return la misma entidad con la lista de privilegios poblada.
+     */
     private GrupoEntity cargarPrivilegios(GrupoEntity entity) {
         entity.setPrivilegios(jdbcTemplate.query(SELECT_PRIVILEGIOS, new RowMapper<>() {
             @Override
